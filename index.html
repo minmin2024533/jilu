@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记账本</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui;
+            padding: 14px;
+            max-width: 720px;
+            margin: 0 auto;
+            background-color: #f4f5f7;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 8px #00000018;
+        }
+        .tab-bar{
+            display:flex;
+            margin-bottom:12px;
+            gap:6px;
+        }
+        .tab{
+            flex:1;
+            text-align:center;
+            padding:10px;
+            border-radius:8px;
+            background:#dddddd;
+        }
+        .tab.active{
+            background:#2774e0;
+            color:#ffffff;
+        }
+        .page{
+            display:none;
+        }
+        .page.show{
+            display:block;
+        }
+        .stat-row{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap:10px;
+            margin-bottom:14px;
+        }
+        .stat-item{
+            text-align:center;
+            padding:10px 6px;
+            border-radius:10px;
+            background-color:#f0f7ff;
+        }
+        .stat-val{
+            font-size:22px;
+            font-weight:bold;
+            color:#2774e0;
+        }
+        .filter-row{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap:8px;
+            margin-bottom:10px;
+        }
+        .item{
+            margin-bottom:10px;
+        }
+        input{
+            width: 100%;
+            font-size:16px;
+            padding:9px;
+            border: #d8d8d8 solid 1px;
+            border-radius: 6px;
+        }
+        .row-btn{
+            display:flex;
+            gap:10px;
+        }
+        button{
+            flex:1;
+            border:none;
+            border-radius:6px;
+            padding:10px;
+            font-size:15px;
+            color:white;
+        }
+        #add{
+            background-color:#2774e0;
+        }
+        #export{
+            background-color:#0faa48;
+        }
+        #resetFilter{
+            background-color:#949494;
+        }
+        table{
+            width:100%;
+            margin-top:12px;
+            font-size:13px;
+            border-collapse: collapse;
+        }
+        td,th{
+            border:#eee solid 1px;
+            padding:7px 4px;
+            text-align:center;
+        }
+        .del{
+            color:#ff3b30;
+            border:0;
+            background:transparent;
+            padding:2px;
+        }
+        .refund{
+            color:#ed333b;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2 style="margin-top:0">记账本</h2>
+    <div class="tab-bar">
+        <div class="tab active" data-page="pageRecord">📝 录入订单</div>
+        <div class="tab" data-page="pageStat">📊 统计查询</div>
+    </div>
+
+    <!-- 页面1：录入订单 -->
+    <div id="pageRecord" class="page show">
+        <div class="item">
+            <label>日期</label>
+            <input id="date" type="date">
+        </div>
+        <div class="item">
+            <label>订单编号</label>
+            <input id="orderId" placeholder="填入订单号">
+        </div>
+        <div class="item">
+            <label>交易金额</label>
+            <input id="amount" step="0.01" type="number" placeholder="交易额">
+        </div>
+        <div class="item">
+            <label>佣金</label>
+            <input id="commission" step="0.01" type="number" placeholder="到手佣金">
+        </div>
+        <div class="item">
+            <label>备注</label>
+            <input id="note" placeholder="备注信息">
+        </div>
+        <div class="row-btn">
+            <button id="add">新增记录</button>
+        </div>
+    </div>
+
+    <!-- 页面2：统计、筛选、列表 -->
+    <div id="pageStat" class="page">
+        <div class="stat-row">
+            <div class="stat-item">
+                <div>订单总数</div>
+                <div class="stat-val" id="countTotal">0</div>
+            </div>
+            <div class="stat-item">
+                <div>交易总额</div>
+                <div class="stat-val" id="sumAmount">¥0.00</div>
+            </div>
+            <div class="stat-item">
+                <div>佣金合计</div>
+                <div class="stat-val" id="sumCommission">¥0.00</div>
+            </div>
+            <div class="stat-item">
+                <div>单均佣金</div>
+                <div class="stat-val" id="avgCommission">¥0.00</div>
+            </div>
+        </div>
+
+        <div class="filter-row">
+            <div>
+                <label>起始日期</label>
+                <input id="dateStart" type="date">
+            </div>
+            <div>
+                <label>结束日期</label>
+                <input id="dateEnd" type="date">
+            </div>
+        </div>
+        <div class="item">
+            <label>关键词搜索(订单号/备注)</label>
+            <input id="keyword" placeholder="输入文字检索">
+        </div>
+        <div class="row-btn">
+            <button id="resetFilter">重置筛选</button>
+            <button id="export">导出CSV</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>订单</th>
+                    <th>金额</th>
+                    <th>佣金</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = "ape_order_list";
+    function getList(){
+        const str = localStorage.getItem(STORAGE_KEY);
+        return str ? JSON.parse(str) : [];
+    }
+    function saveList(arr){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    }
+
+    //标签页切换
+    document.querySelectorAll(".tab").forEach(tab=>{
+        tab.onclick=function(){
+            document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+            this.classList.add("active");
+            const target = this.dataset.page;
+            document.querySelectorAll(".page").forEach(p=>p.classList.remove("show"));
+            document.getElementById(target).classList.add("show");
+            if(target === "pageStat") render();
+        }
+    })
+
+    const elDate = document.querySelector("#date");
+    const elOrderId = document.querySelector("#orderId");
+    const elAmount = document.querySelector("#amount");
+    const elCommission = document.querySelector("#commission");
+    const elNote = document.querySelector("#note");
+
+    const elDateStart = document.querySelector("#dateStart");
+    const elDateEnd = document.querySelector("#dateEnd");
+    const elKeyword = document.querySelector("#keyword");
+
+    const tableBody = document.querySelector("#tableBody");
+    elDate.valueAsDate = new Date();
+
+    function getFiltered(){
+        const all = getList();
+        const sDate = elDateStart.value;
+        const eDate = elDateEnd.value;
+        const kw = elKeyword.value.trim().toLowerCase();
+        return all.filter(row=>{
+            if(sDate && row.date < sDate) return false;
+            if(eDate && row.date > eDate) return false;
+            if(kw){
+                if(!row.orderId.toLowerCase().includes(kw) && !row.note.toLowerCase().includes(kw)){
+                    return false;
+                }
+            }
+            return true;
+        })
+    }
+
+    function calcStats(data){
+        let count = data.length;
+        let sumAmt = 0;
+        let sumComm = 0;
+        data.forEach(r=>{
+            sumAmt += Number(r.amount||0);
+            sumComm += Number(r.commission||0);
+        })
+        let avg = count > 0 ? sumComm / count : 0;
+        return {count,sumAmt,sumComm,avg};
+    }
+
+    function formatMoney(num){
+        let n = Number(num);
+        if(n >= 0){
+            return `¥${n.toFixed(2)}`;
+        }else{
+            return `-¥${Math.abs(n).toFixed(2)}`;
+        }
+    }
+
+    function render(){
+        const list = getFiltered();
+        const stat = calcStats(list);
+
+        document.querySelector("#countTotal").innerText = stat.count;
+        document.querySelector("#sumAmount").innerText = formatMoney(stat.sumAmt);
+        document.querySelector("#sumCommission").innerText = formatMoney(stat.sumComm);
+        document.querySelector("#avgCommission").innerText = formatMoney(stat.avg);
+
+        tableBody.innerHTML = "";
+        if(list.length === 0){
+            tableBody.innerHTML = `<tr><td colspan="6">暂无订单记录</td></tr>`;
+        }
+        list.forEach((row, index)=>{
+            const tr = document.createElement("tr");
+            const amtClass = Number(row.amount) < 0 ? "refund" : "";
+            const commClass = Number(row.commission) < 0 ? "refund" : "";
+            tr.innerHTML = `
+                <td>${row.date}</td>
+                <td>${row.orderId}</td>
+                <td class="${amtClass}">${formatMoney(row.amount)}</td>
+                <td class="${commClass}">${formatMoney(row.commission)}</td>
+                <td>${row.note}</td>
+                <td><button class="del" data-i="${index}">删除</button></td>
+            `;
+            tableBody.appendChild(tr);
+        })
+        document.querySelectorAll(".del").forEach(btn=>{
+            btn.onclick = function(){
+                const idx = Number(this.dataset.i);
+                const fullArr = getList();
+                const filtered = getFiltered();
+                const targetRow = filtered[idx];
+                const realIndex = fullArr.findIndex(item=>
+                    item.date === targetRow.date
+                    && item.orderId === targetRow.orderId
+                );
+                if(realIndex > -1){
+                    fullArr.splice(realIndex,1);
+                    saveList(fullArr);
+                }
+                render();
+            }
+        })
+    }
+
+    document.querySelector("#add").onclick = ()=>{
+        const record = {
+            date:elDate.value,
+            orderId:elOrderId.value.trim(),
+            amount:elAmount.value,
+            commission:elCommission.value,
+            note:elNote.value.trim()
+        };
+        if(!record.orderId){
+            alert("请填写订单编号");
+            return;
+        }
+        const arr = getList();
+        arr.push(record);
+        saveList(arr);
+        elOrderId.value = "";
+        elAmount.value = "";
+        elCommission.value = "";
+        elNote.value = "";
+        alert("保存成功");
+    }
+
+    document.querySelector("#resetFilter").onclick = ()=>{
+        elDateStart.value = "";
+        elDateEnd.value = "";
+        elKeyword.value = "";
+        render();
+    }
+
+    document.querySelector("#export").onclick = ()=>{
+        const arr = getFiltered();
+        let text = "\uFEFF日期,订单号,交易金额,佣金,备注\n";
+        arr.forEach(item=>{
+            text += `${item.date},${item.orderId},${item.amount},${item.commission},"${item.note}"\n`
+        })
+        const blob = new Blob([text],{type:"text/csv;charset=utf-8"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "记账本.csv";
+        a.click();
+    }
+
+    elDateStart.onchange = render;
+    elDateEnd.onchange = render;
+    elKeyword.oninput = render;
+</script>
+</body>
+</html>
