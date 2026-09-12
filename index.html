@@ -1,379 +1,911 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>记账本</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: system-ui;
-            padding: 14px;
-            max-width: 720px;
-            margin: 0 auto;
-            background-color: #f4f5f7;
-        }
-        .card {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 1px 8px #00000018;
-        }
-        .tab-bar{
-            display:flex;
-            margin-bottom:12px;
-            gap:6px;
-        }
-        .tab{
-            flex:1;
-            text-align:center;
-            padding:10px;
-            border-radius:8px;
-            background:#dddddd;
-        }
-        .tab.active{
-            background:#2774e0;
-            color:#ffffff;
-        }
-        .page{
-            display:none;
-        }
-        .page.show{
-            display:block;
-        }
-        .stat-row{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap:10px;
-            margin-bottom:14px;
-        }
-        .stat-item{
-            text-align:center;
-            padding:10px 6px;
-            border-radius:10px;
-            background-color:#f0f7ff;
-        }
-        .stat-val{
-            font-size:22px;
-            font-weight:bold;
-            color:#2774e0;
-        }
-        .filter-row{
-            display:grid;
-            grid-template-columns: 1fr 1fr;
-            gap:8px;
-            margin-bottom:10px;
-        }
-        .item{
-            margin-bottom:10px;
-        }
-        input{
-            width: 100%;
-            font-size:16px;
-            padding:9px;
-            border: #d8d8d8 solid 1px;
-            border-radius: 6px;
-        }
-        .row-btn{
-            display:flex;
-            gap:10px;
-        }
-        button{
-            flex:1;
-            border:none;
-            border-radius:6px;
-            padding:10px;
-            font-size:15px;
-            color:white;
-        }
-        #add{
-            background-color:#2774e0;
-        }
-        #export{
-            background-color:#0faa48;
-        }
-        #resetFilter{
-            background-color:#949494;
-        }
-        table{
-            width:100%;
-            margin-top:12px;
-            font-size:13px;
-            border-collapse: collapse;
-        }
-        td,th{
-            border:#eee solid 1px;
-            padding:7px 4px;
-            text-align:center;
-        }
-        .del{
-            color:#ff3b30;
-            border:0;
-            background:transparent;
-            padding:2px;
-        }
-        .refund{
-            color:#ed333b;
-        }
-    </style>
+<script>
+if(!location.search.includes("t=")){
+    location.replace(location.href + "?t=" + Date.now());
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记账本</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+body{padding:14px;background:#f4f5f7}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 8px #00000018;position:relative}
+.top-right{position:absolute;top:12px;right:12px}
+.btn-clear{background:#f44336;color:#fff;border:0;border-radius:6px;padding:4px 8px;font-size:13px}
+.tab-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{flex:1;text-align:center;padding:10px;border-radius:8px;background:#ddd;font-size:14px}
+.tab.active{background:#2774e9;color:#fff}
+.page{display:none}
+.page.show{display:block}
+.item{margin-bottom:10px}
+label{display:block;margin-bottom:4px;font-size:14px}
+input,select{width:100%;font-size:16px;padding:9px;border:1px solid #ddd;border-radius:6px}
+.row-btn{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+button{flex:1;border:none;border-radius:6px;padding:10px;font-size:15px;color:#fff}
+.btn-add{background:#2774e9}
+.btn-reset{background:#999}
+.btn-export{background:#0e9c48}
+.btn-import{background:#7b48d8}
+.btn-save-preset{background:#2774e9;font-size:13px;padding:6px}
+.btn-diagnose{background:#ff9800;font-size:13px;padding:6px}
+.btn-migrate{background:#e91e63;font-size:13px;padding:6px}
+.month-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 0}
+.month-wrap button{flex:none;padding:6px 12px}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-item{text-align:center;padding:10px 6px;border-radius:10px;background:#f0f7ff}
+.stat-val{font-size:22px;font-weight:bold;color:#2774e9}
+table{width:100%;margin-top:12px;border-collapse:collapse;font-size:12px}
+th,td{border:1px solid #eee;padding:6px 3px;text-align:center}
+.tr-exp{background-color:#fff2f2;}
+.btn-del{color:#f44336;background:transparent;border:0;padding:2px}
+.btn-edit{color:#2774e9;background:transparent;border:0;padding:2px}
+.file-hide{display:none}
+.readonly-tip{font-size:12px;color:#666;margin-top:2px}
+.collapse-wrap{border:1px solid #ddd;border-radius:6px;margin-bottom:10px;overflow:hidden}
+.collapse-head{padding:10px;background:#f7f7f7;cursor:pointer;user-select:none}
+.collapse-body{padding:10px;display:none}
+.collapse-body.open{display:block}
+.preset-block{margin-bottom:12px;padding:8px;border:1px solid #eee;border-radius:6px}
+.preset-row{display:flex;gap:6px;margin-top:6px}
+.preset-row input{flex:1}
+.diagnose-box{background:#f5f5f5;border-radius:6px;padding:10px;margin-top:12px;font-size:11px;display:none;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto}
+.diagnose-box.show{display:block}
+.storage-item{border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:8px;background:#fafafa}
+.storage-item h4{margin:0 0 6px;font-size:13px;color:#333}
+.storage-item pre{font-size:11px;background:#fff;padding:6px;border-radius:4px;overflow-x:auto;margin:0 0 6px}
+/* 编辑弹窗样式 */
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;padding:14px;z-index:999}
+.modal.show{display:flex}
+.modal-card{background:#fff;border-radius:12px;padding:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal .row-btn button{flex:1}
+</style>
 </head>
 <body>
 <div class="card">
-    <h2 style="margin-top:0">记账本</h2>
-    <div class="tab-bar">
-        <div class="tab active" data-page="pageRecord">📝 录入订单</div>
-        <div class="tab" data-page="pageStat">📊 统计查询</div>
-    </div>
+<div class="top-right"><button class="btn-clear" id="clearAll">清空全部记录</button></div>
+<h2 style="margin-bottom:10px">记账本</h2>
+<div class="tab-bar">
+<div class="tab active" data-page="pageOrder">📝业务订单</div>
+<div class="tab" data-page="pageExp">💸日常支出</div>
+<div class="tab" data-page="pageStat">📊统计查询</div>
+</div>
 
-    <!-- 页面1：录入订单 -->
-    <div id="pageRecord" class="page show">
-        <div class="item">
-            <label>日期</label>
-            <input id="date" type="date">
-        </div>
-        <div class="item">
-            <label>订单编号</label>
-            <input id="orderId" placeholder="填入订单号">
-        </div>
-        <div class="item">
-            <label>交易金额</label>
-            <input id="amount" step="0.01" type="number" placeholder="交易额">
-        </div>
-        <div class="item">
-            <label>佣金</label>
-            <input id="commission" step="0.01" type="number" placeholder="到手佣金">
-        </div>
-        <div class="item">
-            <label>备注</label>
-            <input id="note" placeholder="备注信息">
-        </div>
-        <div class="row-btn">
-            <button id="add">新增记录</button>
-        </div>
-    </div>
+<div id="pageOrder" class="page show">
+<div class="collapse-wrap">
+<div class="collapse-head" id="collapseHead">▶ 分类默认成本预设（点击展开）</div>
+<div class="collapse-body" id="collapseBody">
+<div class="preset-block">
+<div><strong>话费默认成本</strong></div>
+<div class="preset-row">
+<input type="number" step="0.01" id="preCostPhone" placeholder="拿货单价">
+<input type="number" step="0.01" id="preSellPhone" placeholder="售出单价">
+<button class="btn-save-preset" data-key="话费">保存话费预设</button>
+</div>
+</div>
+<div class="preset-block">
+<div><strong>电费默认成本</strong></div>
+<div class="preset-row">
+<input type="number" step="0.01" id="preCostElec" placeholder="拿货单价">
+<input type="number" step="0.01" id="preSellElec" placeholder="售出单价">
+<button class="btn-save-preset" data-key="电费">保存电费预设</button>
+</div>
+</div>
+<div class="preset-block">
+<div><strong>燃气默认成本</strong></div>
+<div class="preset-row">
+<input type="number" step="0.01" id="preCostGas" placeholder="拿货单价">
+<input type="number" step="0.01" id="preSellGas" placeholder="售出单价">
+<button class="btn-save-preset" data-key="燃气">保存燃气预设</button>
+</div>
+</div>
+<div class="readonly-tip">切换上方分类，会自动加载对应已保存的拿货/售出单价</div>
+</div>
+</div>
 
-    <!-- 页面2：统计、筛选、列表 -->
-    <div id="pageStat" class="page">
-        <div class="stat-row">
-            <div class="stat-item">
-                <div>订单总数</div>
-                <div class="stat-val" id="countTotal">0</div>
-            </div>
-            <div class="stat-item">
-                <div>交易总额</div>
-                <div class="stat-val" id="sumAmount">¥0.00</div>
-            </div>
-            <div class="stat-item">
-                <div>佣金合计</div>
-                <div class="stat-val" id="sumCommission">¥0.00</div>
-            </div>
-            <div class="stat-item">
-                <div>单均佣金</div>
-                <div class="stat-val" id="avgCommission">¥0.00</div>
-            </div>
-        </div>
+<div class="item">
+<label>日期</label>
+<input type="date" id="orderDate">
+</div>
+<div class="item">
+<label>分类</label>
+<select id="orderCat">
+<option value="话费">话费</option>
+<option value="电费">电费</option>
+<option value="燃气">燃气</option>
+<option value="水费">水费</option>
+</select>
+</div>
+<div class="item">
+<label>拿货单价（每100面值）</label>
+<input type="number" step="0.01" id="costPrice" placeholder="例：92.0">
+</div>
+<div class="item">
+<label>售出单价（每100面值）</label>
+<input type="number" step="0.01" id="sellPrice" placeholder="例：94.0">
+</div>
+<div class="item">
+<label>倍数(1‑30)</label>
+<select id="multiCnt">
+</select>
+</div>
+<div class="item">
+<label>自动‑拿货总成本</label>
+<input type="text" id="calcCost" readonly placeholder="自动计算">
+<div class="readonly-tip">拿货单价 × 倍数</div>
+</div>
+<div class="item">
+<label>自动‑交易金额</label>
+<input type="text" id="calcSell" readonly placeholder="自动计算">
+<div class="readonly-tip">售出单价 × 倍数</div>
+</div>
+<div class="item">
+<label>利润（自动计算，可手动修改）</label>
+<input type="number" step="0.01" id="profit" placeholder="可手动改写">
+</div>
+<div class="item">
+<label>备注</label>
+<input type="text" id="note" placeholder="备注信息">
+</div>
+<div class="row-btn">
+<button class="btn-add" id="addBtn">新增订单</button>
+<button class="btn-reset" id="resetForm">重置表单</button>
+</div>
+</div>
 
-        <div class="filter-row">
-            <div>
-                <label>起始日期</label>
-                <input id="dateStart" type="date">
-            </div>
-            <div>
-                <label>结束日期</label>
-                <input id="dateEnd" type="date">
-            </div>
-        </div>
-        <div class="item">
-            <label>关键词搜索(订单号/备注)</label>
-            <input id="keyword" placeholder="输入文字检索">
-        </div>
-        <div class="row-btn">
-            <button id="resetFilter">重置筛选</button>
-            <button id="export">导出CSV</button>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>日期</th>
-                    <th>订单</th>
-                    <th>金额</th>
-                    <th>佣金</th>
-                    <th>备注</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-            </tbody>
-        </table>
-    </div>
+<div id="pageExp" class="page">
+<div class="item">
+<label>日期</label>
+<input type="date" id="expDate">
+</div>
+<div class="item">
+<label>支出分类</label>
+<select id="expCat">
+<option value="餐饮">餐饮</option>
+<option value="交通">交通</option>
+<option value="购物">购物</option>
+<option value="水电">水电</option>
+<option value="其他">其他</option>
+</select>
+</div>
+<div class="item">
+<label>支出金额</label>
+<input type="number" step="0.01" id="expMoney" placeholder="花费多少钱">
+</div>
+<div class="item">
+<label>备注</label>
+<input type="text" id="expNote" placeholder="买了什么">
+</div>
+<div class="row-btn">
+<button class="btn-add" id="addExpBtn">新增支出</button>
+<button class="btn-reset" id="resetExpForm">重置</button>
+</div>
+</div>
+
+<div id="pageStat" class="page">
+<div class="month-wrap">
+<button id="prevMonth">&lt;上月</button>
+<div id="monthText"></div>
+<button id="nextMonth">下月&gt;</button>
+</div>
+<div class="stat-row">
+<div class="stat-item"><div>订单总数</div><div class="stat-val" id="totalCount">0</div></div>
+<div class="stat-item"><div>交易总金额</div><div class="stat-val" id="totalSell">0.00</div></div>
+<div class="stat-item"><div>总利润</div><div class="stat-val" id="totalProfit">0.00</div></div>
+<div class="stat-item"><div>本月净收益</div><div class="stat-val" id="netIncome">0.00</div></div>
+</div>
+<div class="item">
+<label>筛选分类</label>
+<select id="filterCat">
+<option value="">全部</option>
+<option value="话费">话费</option>
+<option value="电费">电费</option>
+<option value="燃气">燃气</option>
+<option value="水费">水费</option>
+<option value="日常支出">日常支出</option>
+</select>
+</div>
+<div class="row-btn">
+<button class="btn-reset" id="resetFilter">重置筛选</button>
+<button class="btn-import" id="importBtn">导入CSV</button>
+<button class="btn-export" id="exportBtn">导出CSV</button>
+</div>
+<div class="row-btn">
+<button class="btn-diagnose" id="diagnoseBtn">🔍 扫描所有存储数据</button>
+<button class="btn-migrate" id="migrateBtn">📥 一键迁移旧数据（不删除原数据）</button>
+</div>
+<div class="diagnose-box" id="diagnoseBox"></div>
+<input type="file" id="fileInput" class="file-hide" accept=".csv"/>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>类型</th>
+<th>分类</th>
+<th>拿货单价</th>
+<th>售出单价</th>
+<th>倍数</th>
+<th>成本/支出</th>
+<th>交易金额</th>
+<th>利润</th>
+<th>备注</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+</div>
+
+<!-- 订单编辑弹窗 -->
+<div class="modal" id="editModal">
+<div class="modal-card">
+<h3>编辑业务订单</h3>
+<div class="item">
+<label>日期</label>
+<input type="date" id="editDate">
+</div>
+<div class="item">
+<label>分类</label>
+<select id="editCat">
+<option value="话费">话费</option>
+<option value="电费">电费</option>
+<option value="燃气">燃气</option>
+<option value="水费">水费</option>
+</select>
+</div>
+<div class="item">
+<label>拿货单价（每100面值）</label>
+<input type="number" step="0.01" id="editCostPrice">
+</div>
+<div class="item">
+<label>售出单价（每100面值）</label>
+<input type="number" step="0.01" id="editSellPrice">
+</div>
+<div class="item">
+<label>倍数(1‑30)</label>
+<select id="editMultiCnt"></select>
+</div>
+<div class="item">
+<label>自动‑拿货总成本</label>
+<input type="text" id="editCalcCost" readonly>
+</div>
+<div class="item">
+<label>自动‑交易金额</label>
+<input type="text" id="editCalcSell" readonly>
+</div>
+<div class="item">
+<label>利润（自动计算，可手动修改）</label>
+<input type="number" step="0.01" id="editProfit">
+</div>
+<div class="item">
+<label>备注</label>
+<input type="text" id="editNote">
+</div>
+<div class="row-btn">
+<button class="btn-add" id="saveEditBtn">保存修改</button>
+<button class="btn-reset" id="closeEditModal">取消</button>
+</div>
+</div>
 </div>
 
 <script>
-    const STORAGE_KEY = "ape_order_list";
-    function getList(){
-        const str = localStorage.getItem(STORAGE_KEY);
-        return str ? JSON.parse(str) : [];
+const STORAGE_ORDER = "biz_order_list";
+const STORAGE_EXP = "biz_exp_list";
+const STORAGE_PRESET = "biz_cat_preset";
+let currentYm = "";
+let editFullIndex = null; // 编辑订单的全局索引
+
+function getOrders(){
+const s=localStorage.getItem(STORAGE_ORDER);
+return s?JSON.parse(s):[];
+}
+function saveOrders(arr){
+localStorage.setItem(STORAGE_ORDER,JSON.stringify(arr));
+}
+function getExps(){
+const s=localStorage.getItem(STORAGE_EXP);
+return s?JSON.parse(s):[];
+}
+function saveExps(arr){
+localStorage.setItem(STORAGE_EXP,JSON.stringify(arr));
+}
+
+// 智能字段提取：兼容各种可能的字段名
+function extractField(obj, candidates){
+    for(const key of candidates){
+        if(obj[key] != null && obj[key] !== "") return obj[key];
     }
-    function saveList(arr){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    return null;
+}
+
+// 把任意格式的旧订单对象转成统一格式
+function normalizeOrder(o){
+    const date = extractField(o, ["date","time","createdAt","日期","rq"]) || "";
+    const cat = extractField(o, ["cat","category","type","name","分类","fl"]) || "";
+    const costPrice = extractField(o, ["costPrice","拿货单价","cost_price"]);
+    const sellPrice = extractField(o, ["sellPrice","售出单价","sell_price"]);
+    const multiCnt = extractField(o, ["multiCnt","倍数","multi_cnt","hundredCnt"]);
+    const calcCost = extractField(o, ["calcCost","cost","拿货成本","总成本","buyPrice","inputPrice","成本"]);
+    const calcSell = extractField(o, ["calcSell","sell","amount","交易金额","卖出价","sellAmount","money","price","金额"]);
+    const profit = extractField(o, ["profit","earnings","income","gain","利润","lr","netProfit"]);
+    const note = extractField(o, ["note","remark","备注","bz","desc"]) || "";
+    return {
+        date: String(date),
+        cat: String(cat),
+        costPrice: costPrice != null ? Number(costPrice) : "",
+        sellPrice: sellPrice != null ? Number(sellPrice) : "",
+        multiCnt: multiCnt != null ? Number(multiCnt) : "",
+        calcCost: calcCost != null ? Number(calcCost) : (costPrice && multiCnt ? Number(costPrice)*Number(multiCnt) : 0),
+        calcSell: calcSell != null ? Number(calcSell) : (sellPrice && multiCnt ? Number(sellPrice)*Number(multiCnt) : 0),
+        profit: profit != null ? Number(profit) : 0,
+        note: String(note),
+        _raw: o  // 保留原始数据，防止字段丢失
+    };
+}
+
+function normalizeExp(e){
+    const date = extractField(e, ["date","time","createdAt","日期","rq"]) || "";
+    const cat = extractField(e, ["cat","category","type","name","分类","fl"]) || "";
+    const money = extractField(e, ["money","amount","支出","金额","price","cost"]);
+    const note = extractField(e, ["note","remark","备注","bz","desc"]) || "";
+    return {
+        date: String(date),
+        cat: String(cat),
+        money: money != null ? Number(money) : 0,
+        note: String(note),
+        _raw: e
+    };
+}
+
+// 判断是不是订单数据
+function isOrderData(arr){
+    if(!Array.isArray(arr) || arr.length === 0) return false;
+    const first = arr[0];
+    if(!first || typeof first !== 'object') return false;
+    const hasDate = !!extractField(first, ["date","time","createdAt","日期","rq"]);
+    const hasCat = !!extractField(first, ["cat","category","type","name","分类","fl"]);
+    const hasProfit = extractField(first, ["profit","earnings","income","gain","利润","lr","netProfit"]) != null;
+    const hasSell = extractField(first, ["calcSell","sell","amount","交易金额","卖出价","sellAmount","money","price","金额"]) != null;
+    const hasCost = extractField(first, ["calcCost","cost","拿货成本","总成本","buyPrice","inputPrice","成本"]) != null;
+    // 有日期+分类，并且有利润/卖出/成本之一，认为是订单
+    return hasDate && hasCat && (hasProfit || hasSell || hasCost);
+}
+
+function isExpData(arr){
+    if(!Array.isArray(arr) || arr.length === 0) return false;
+    const first = arr[0];
+    if(!first || typeof first !== 'object') return false;
+    const hasDate = !!extractField(first, ["date","time","createdAt","日期","rq"]);
+    const hasCat = !!extractField(first, ["cat","category","type","name","分类","fl"]);
+    const hasMoney = extractField(first, ["money","amount","支出","金额","price","cost"]) != null;
+    const hasProfit = extractField(first, ["profit","earnings","income","利润"]) != null;
+    // 支出：有日期分类金额，但没有利润字段（有利润的算订单）
+    return hasDate && hasCat && hasMoney && !hasProfit;
+}
+
+// 扫描所有存储
+function scanStorage(){
+    const results = [];
+    for(let i=0; i<localStorage.length; i++){
+        const key = localStorage.key(i);
+        if(!key) continue;
+        if(key === STORAGE_ORDER || key === STORAGE_EXP || key === STORAGE_PRESET) continue;
+        const val = localStorage.getItem(key);
+        if(!val) continue;
+        let parsed = null;
+        try{ parsed = JSON.parse(val); }catch(e){ continue; }
+        if(!Array.isArray(parsed)) continue;
+        let type = "未知数组";
+        if(isOrderData(parsed)) type = "订单数据";
+        else if(isExpData(parsed)) type = "支出数据";
+        results.push({
+            key: key,
+            count: parsed.length,
+            type: type,
+            sample: parsed.slice(0, 3),
+            raw: parsed
+        });
     }
+    return results;
+}
 
-    //标签页切换
-    document.querySelectorAll(".tab").forEach(tab=>{
-        tab.onclick=function(){
-            document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-            this.classList.add("active");
-            const target = this.dataset.page;
-            document.querySelectorAll(".page").forEach(p=>p.classList.remove("show"));
-            document.getElementById(target).classList.add("show");
-            if(target === "pageStat") render();
-        }
-    })
+// 诊断显示
+function runDiagnose(){
+    const box = document.getElementById("diagnoseBox");
+    box.classList.add("show");
+    const currentOrders = getOrders();
+    const currentExps = getExps();
+    let html = `<div class="storage-item"><h4>📦 当前订单存储 (${STORAGE_ORDER}) - ${currentOrders.length}条</h4>`;
+    if(currentOrders.length > 0){
+        html += `<pre>${JSON.stringify(currentOrders.slice(0,3), null, 2)}</pre>`;
+    }else{
+        html += `<pre>（空）</pre>`;
+    }
+    html += `</div>`;
+    html += `<div class="storage-item"><h4>📦 当前支出存储 (${STORAGE_EXP}) - ${currentExps.length}条</h4>`;
+    if(currentExps.length > 0){
+        html += `<pre>${JSON.stringify(currentExps.slice(0,3), null, 2)}</pre>`;
+    }else{
+        html += `<pre>（空）</pre>`;
+    }
+    html += `</div>`;
 
-    const elDate = document.querySelector("#date");
-    const elOrderId = document.querySelector("#orderId");
-    const elAmount = document.querySelector("#amount");
-    const elCommission = document.querySelector("#commission");
-    const elNote = document.querySelector("#note");
+    const others = scanStorage();
+    if(others.length === 0){
+        html += `<div class="storage-item"><h4>没有检测到其他存储数据</h4></div>`;
+    }else{
+        others.forEach(item => {
+            html += `<div class="storage-item"><h4>🔍 [${item.key}] - ${item.count}条 - 识别为：${item.type}</h4>`;
+            html += `<pre>${JSON.stringify(item.sample, null, 2)}</pre>`;
+            html += `</div>`;
+        });
+    }
+    box.innerHTML = html;
+}
 
-    const elDateStart = document.querySelector("#dateStart");
-    const elDateEnd = document.querySelector("#dateEnd");
-    const elKeyword = document.querySelector("#keyword");
+// 一键迁移（不删除原数据）
+function doMigrate(){
+    const others = scanStorage();
+    if(others.length === 0){
+        alert("没有检测到可迁移的旧数据");
+        return;
+    }
+    let orderAdded = 0, expAdded = 0;
+    const existingOrders = getOrders();
+    const existingExps = getExps();
 
-    const tableBody = document.querySelector("#tableBody");
-    elDate.valueAsDate = new Date();
-
-    function getFiltered(){
-        const all = getList();
-        const sDate = elDateStart.value;
-        const eDate = elDateEnd.value;
-        const kw = elKeyword.value.trim().toLowerCase();
-        return all.filter(row=>{
-            if(sDate && row.date < sDate) return false;
-            if(eDate && row.date > eDate) return false;
-            if(kw){
-                if(!row.orderId.toLowerCase().includes(kw) && !row.note.toLowerCase().includes(kw)){
-                    return false;
-                }
+    others.forEach(item => {
+        if(item.type === "订单数据"){
+            const converted = item.raw.map(normalizeOrder);
+            const filtered = converted.filter(c => !existingOrders.some(e =>
+                e.date === c.date && e.cat === c.cat &&
+                Number(e.calcSell||0) === Number(c.calcSell) &&
+                Number(e.profit||0) === Number(c.profit)
+            ));
+            if(filtered.length > 0){
+                saveOrders([...existingOrders, ...filtered]);
+                orderAdded += filtered.length;
             }
-            return true;
-        })
-    }
-
-    function calcStats(data){
-        let count = data.length;
-        let sumAmt = 0;
-        let sumComm = 0;
-        data.forEach(r=>{
-            sumAmt += Number(r.amount||0);
-            sumComm += Number(r.commission||0);
-        })
-        let avg = count > 0 ? sumComm / count : 0;
-        return {count,sumAmt,sumComm,avg};
-    }
-
-    function formatMoney(num){
-        let n = Number(num);
-        if(n >= 0){
-            return `¥${n.toFixed(2)}`;
-        }else{
-            return `-¥${Math.abs(n).toFixed(2)}`;
-        }
-    }
-
-    function render(){
-        const list = getFiltered();
-        const stat = calcStats(list);
-
-        document.querySelector("#countTotal").innerText = stat.count;
-        document.querySelector("#sumAmount").innerText = formatMoney(stat.sumAmt);
-        document.querySelector("#sumCommission").innerText = formatMoney(stat.sumComm);
-        document.querySelector("#avgCommission").innerText = formatMoney(stat.avg);
-
-        tableBody.innerHTML = "";
-        if(list.length === 0){
-            tableBody.innerHTML = `<tr><td colspan="6">暂无订单记录</td></tr>`;
-        }
-        list.forEach((row, index)=>{
-            const tr = document.createElement("tr");
-            const amtClass = Number(row.amount) < 0 ? "refund" : "";
-            const commClass = Number(row.commission) < 0 ? "refund" : "";
-            tr.innerHTML = `
-                <td>${row.date}</td>
-                <td>${row.orderId}</td>
-                <td class="${amtClass}">${formatMoney(row.amount)}</td>
-                <td class="${commClass}">${formatMoney(row.commission)}</td>
-                <td>${row.note}</td>
-                <td><button class="del" data-i="${index}">删除</button></td>
-            `;
-            tableBody.appendChild(tr);
-        })
-        document.querySelectorAll(".del").forEach(btn=>{
-            btn.onclick = function(){
-                const idx = Number(this.dataset.i);
-                const fullArr = getList();
-                const filtered = getFiltered();
-                const targetRow = filtered[idx];
-                const realIndex = fullArr.findIndex(item=>
-                    item.date === targetRow.date
-                    && item.orderId === targetRow.orderId
-                );
-                if(realIndex > -1){
-                    fullArr.splice(realIndex,1);
-                    saveList(fullArr);
-                }
-                render();
+        }else if(item.type === "支出数据"){
+            const converted = item.raw.map(normalizeExp);
+            const filtered = converted.filter(c => !existingExps.some(e =>
+                e.date === c.date && e.cat === c.cat && Number(e.money||0) === Number(c.money)
+            ));
+            if(filtered.length > 0){
+                saveExps([...existingExps, ...filtered]);
+                expAdded += filtered.length;
             }
-        })
-    }
-
-    document.querySelector("#add").onclick = ()=>{
-        const record = {
-            date:elDate.value,
-            orderId:elOrderId.value.trim(),
-            amount:elAmount.value,
-            commission:elCommission.value,
-            note:elNote.value.trim()
-        };
-        if(!record.orderId){
-            alert("请填写订单编号");
-            return;
         }
-        const arr = getList();
-        arr.push(record);
-        saveList(arr);
-        elOrderId.value = "";
-        elAmount.value = "";
-        elCommission.value = "";
-        elNote.value = "";
-        alert("保存成功");
-    }
+    });
 
-    document.querySelector("#resetFilter").onclick = ()=>{
-        elDateStart.value = "";
-        elDateEnd.value = "";
-        elKeyword.value = "";
-        render();
-    }
+    alert(`迁移完成：订单迁入 ${orderAdded} 条，支出迁入 ${expAdded} 条\n原数据未删除，可再次扫描确认。`);
+    renderStat();
+    runDiagnose();
+}
 
-    document.querySelector("#export").onclick = ()=>{
-        const arr = getFiltered();
-        let text = "\uFEFF日期,订单号,交易金额,佣金,备注\n";
-        arr.forEach(item=>{
-            text += `${item.date},${item.orderId},${item.amount},${item.commission},"${item.note}"\n`
-        })
-        const blob = new Blob([text],{type:"text/csv;charset=utf-8"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "记账本.csv";
-        a.click();
-    }
+function getCatPreset(){
+    const s = localStorage.getItem(STORAGE_PRESET);
+    return s ? JSON.parse(s) : {"话费":{cost:"",sell:""},"电费":{cost:"",sell:""},"燃气":{cost:"",sell:""}};
+}
+function saveCatPreset(obj){
+    localStorage.setItem(STORAGE_PRESET, JSON.stringify(obj));
+}
 
-    elDateStart.onchange = render;
-    elDateEnd.onchange = render;
-    elKeyword.oninput = render;
+function loadCurrentCatPreset(){
+    const cat = document.getElementById("orderCat").value;
+    const preset = getCatPreset();
+    if(preset[cat]){
+        document.getElementById("costPrice").value = preset[cat].cost;
+        document.getElementById("sellPrice").value = preset[cat].sell;
+        recalcAll();
+    }
+    if(cat==="话费"){
+        document.getElementById("preCostPhone").value=preset.话费.cost;
+        document.getElementById("preSellPhone").value=preset.话费.sell;
+    }else if(cat==="电费"){
+        document.getElementById("preCostElec").value=preset.电费.cost;
+        document.getElementById("preSellElec").value=preset.电费.sell;
+    }else if(cat==="燃气"){
+        document.getElementById("preCostGas").value=preset.燃气.cost;
+        document.getElementById("preSellGas").value=preset.燃气.sell;
+    }
+}
+
+const multiSel = document.getElementById("multiCnt");
+for(let i=1;i<=30;i++){
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.innerText = i;
+    multiSel.appendChild(opt);
+}
+
+// 编辑弹窗倍数下拉
+const editMultiSel = document.getElementById("editMultiCnt");
+for(let i=1;i<=30;i++){
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.innerText = i;
+    editMultiSel.appendChild(opt);
+}
+
+const collapseHead = document.getElementById("collapseHead");
+const collapseBody = document.getElementById("collapseBody");
+collapseHead.onclick = ()=>{
+    collapseBody.classList.toggle("open");
+    collapseHead.innerText = collapseBody.classList.contains("open") ? "▼ 分类默认成本预设（点击收起）":"▶ 分类默认成本预设（点击展开）";
+}
+
+document.querySelectorAll(".btn-save-preset").forEach(btn=>{
+    btn.onclick=()=>{
+        const key = btn.dataset.key;
+        const preset = getCatPreset();
+        if(key==="话费"){
+            preset.话费.cost = document.getElementById("preCostPhone").value;
+            preset.话费.sell = document.getElementById("preSellPhone").value;
+        }else if(key==="电费"){
+            preset.电费.cost = document.getElementById("preCostElec").value;
+            preset.电费.sell = document.getElementById("preSellElec").value;
+        }else if(key==="燃气"){
+            preset.燃气.cost = document.getElementById("preCostGas").value;
+            preset.燃气.sell = document.getElementById("preSellGas").value;
+        }
+        saveCatPreset(preset);
+        loadCurrentCatPreset();
+        alert(key+"预设已保存，切换分类自动加载");
+    }
+})
+
+document.getElementById("orderCat").onchange = loadCurrentCatPreset;
+document.getElementById("diagnoseBtn").onclick = runDiagnose;
+document.getElementById("migrateBtn").onclick = doMigrate;
+
+function getNowYm(){
+const d=new Date();
+return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function getTodayStr(){
+const d=new Date();
+return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+document.querySelectorAll(".tab").forEach(tab=>{
+tab.onclick=()=>{
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+tab.classList.add("active");
+const pg=tab.dataset.page;
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("show"));
+document.getElementById(pg).classList.add("show");
+if(pg==="pageStat") renderStat();
+}
+})
+
+const orderDate=document.getElementById("orderDate");
+const orderCat=document.getElementById("orderCat");
+const costPriceIn=document.getElementById("costPrice");
+const sellPriceIn=document.getElementById("sellPrice");
+const multiCntIn=document.getElementById("multiCnt");
+const calcCostOut=document.getElementById("calcCost");
+const calcSellOut=document.getElementById("calcSell");
+const profitIn=document.getElementById("profit");
+const noteIn=document.getElementById("note");
+orderDate.value=getTodayStr();
+loadCurrentCatPreset();
+
+function recalcAll(){
+const costPrice=Number(costPriceIn.value||0);
+const sellPrice=Number(sellPriceIn.value||0);
+const cnt=Number(multiCntIn.value||0);
+const realCost=costPrice*cnt;
+const realSell=sellPrice*cnt;
+calcCostOut.value=realCost.toFixed(2);
+calcSellOut.value=realSell.toFixed(2);
+profitIn.value=(realSell-realCost).toFixed(2);
+}
+costPriceIn.oninput=recalcAll;
+sellPriceIn.oninput=recalcAll;
+multiCntIn.onchange=recalcAll;
+
+//编辑弹窗计算
+const editCostPrice=document.getElementById("editCostPrice");
+const editSellPrice=document.getElementById("editSellPrice");
+const editMultiCnt=document.getElementById("editMultiCnt");
+const editCalcCost=document.getElementById("editCalcCost");
+const editCalcSell=document.getElementById("editCalcSell");
+const editProfit=document.getElementById("editProfit");
+function recalcEdit(){
+    const cp=Number(editCostPrice.value||0);
+    const sp=Number(editSellPrice.value||0);
+    const cnt=Number(editMultiCnt.value||0);
+    const rc=cp*cnt;
+    const rs=sp*cnt;
+    editCalcCost.value=rc.toFixed(2);
+    editCalcSell.value=rs.toFixed(2);
+    editProfit.value=(rs-rc).toFixed(2);
+}
+editCostPrice.oninput=recalcEdit;
+editSellPrice.oninput=recalcEdit;
+editMultiCnt.onchange=recalcEdit;
+
+//关闭编辑弹窗
+document.getElementById("closeEditModal").onclick = ()=>{
+    document.getElementById("editModal").classList.remove("show");
+    editFullIndex=null;
+}
+
+//保存编辑
+document.getElementById("saveEditBtn").onclick=()=>{
+    const date=document.getElementById("editDate").value;
+    const cat=document.getElementById("editCat").value;
+    const cp=Number(editCostPrice.value);
+    const sp=Number(editSellPrice.value);
+    const cnt=Number(editMultiCnt.value);
+    const pf=Number(editProfit.value||0);
+    const nt=document.getElementById("editNote").value.trim();
+    if(!date||isNaN(cp)||isNaN(sp)||isNaN(cnt)||cnt<1||cnt>30){
+        alert("请填写完整，倍数范围1‑30");
+        return;
+    }
+    const arr = getOrders();
+    arr[editFullIndex]={
+        date,cat,
+        costPrice:cp,
+        sellPrice:sp,
+        multiCnt:cnt,
+        calcCost:cp*cnt,
+        calcSell:sp*cnt,
+        profit:pf,
+        note:nt
+    };
+    saveOrders(arr);
+    document.getElementById("editModal").classList.remove("show");
+    editFullIndex=null;
+    renderStat();
+    alert("订单修改保存成功！");
+}
+
+document.getElementById("addBtn").onclick=()=>{
+const costPrice=Number(costPriceIn.value);
+const sellPrice=Number(sellPriceIn.value);
+const multiCnt=Number(multiCntIn.value);
+if(!orderDate.value||isNaN(costPrice)||isNaN(sellPrice)||isNaN(multiCnt)||multiCnt<1||multiCnt>30){
+alert("请填写完整，倍数范围1‑30");
+return;
+}
+const rec={
+date:orderDate.value,
+cat:orderCat.value,
+costPrice:costPrice,
+sellPrice:sellPrice,
+multiCnt:multiCnt,
+calcCost:costPrice*multiCnt,
+calcSell:sellPrice*multiCnt,
+profit:Number(profitIn.value||0),
+note:noteIn.value.trim()
+}
+const arr=getOrders();
+arr.push(rec);
+saveOrders(arr);
+resetOrderForm();
+alert("已保存");
+renderStat();
+}
+
+function resetOrderForm(){
+orderDate.value=getTodayStr();
+costPriceIn.value="";
+sellPriceIn.value="";
+multiCntIn.value=1;
+calcCostOut.value="";
+calcSellOut.value="";
+profitIn.value="";
+noteIn.value="";
+loadCurrentCatPreset();
+}
+document.getElementById("resetForm").onclick=resetOrderForm;
+
+const expDate=document.getElementById("expDate");
+const expCat=document.getElementById("expCat");
+const expMoney=document.getElementById("expMoney");
+const expNote=document.getElementById("expNote");
+expDate.value=getTodayStr();
+document.getElementById("addExpBtn").onclick=()=>{
+const m=Number(expMoney.value);
+if(!expDate.value||isNaN(m)){alert("填写支出金额");return}
+saveExps([...getExps(),{date:expDate.value,cat:expCat.value,money:m,note:expNote.value.trim()}]);
+resetExpForm();alert("支出已保存");renderStat();
+}
+function resetExpForm(){expDate.value=getTodayStr();expMoney.value="";expNote.value=""}
+document.getElementById("resetExpForm").onclick=resetExpForm;
+
+function parseYm(ym){
+const [y,m]=ym.split("-").map(Number);return {y,m};
+}
+function ymAdd(ym,off){
+let {y,m}=parseYm(ym);m+=off;
+if(m>12){m=1;y+=1}
+if(m<1){m=12;y-=1}
+return `${y}-${String(m).padStart(2,'0')}`;
+}
+document.getElementById("prevMonth").onclick=()=>{currentYm=ymAdd(currentYm,-1);renderStat()}
+document.getElementById("nextMonth").onclick=()=>{currentYm=ymAdd(currentYm,1);renderStat()}
+document.getElementById("resetFilter").onclick=()=>{document.getElementById("filterCat").value="";renderStat()}
+
+function renderStat(){
+if(!currentYm) currentYm=getNowYm();
+document.getElementById("monthText").innerText=currentYm;
+const filterCat=document.getElementById("filterCat").value;
+let orders=getOrders().filter(o=>o.date.startsWith(currentYm));
+let exps=getExps().filter(e=>e.date.startsWith(currentYm));
+
+//筛选逻辑
+if(filterCat){
+  if(filterCat==="日常支出"){
+    orders=[];
+  }else{
+    exps=[];
+    orders=orders.filter(o=>o.cat===filterCat);
+  }
+}
+
+let totalSell=0,totalProfit=0;
+orders.forEach(o=>{
+    totalSell += Number(o.calcSell != null ? o.calcSell : (o.sell || 0));
+    totalProfit += Number(o.profit || 0);
+})
+let totalExp=0;
+exps.forEach(e=>totalExp+=Number(e.money||0));
+
+document.getElementById("totalCount").innerText=orders.length;
+document.getElementById("totalSell").innerText=totalSell.toFixed(2);
+document.getElementById("totalProfit").innerText=totalProfit.toFixed(2);
+document.getElementById("netIncome").innerText=(totalProfit-totalExp).toFixed(2);
+
+const tb=document.getElementById("tableBody");
+tb.innerHTML="";
+
+//渲染业务订单
+orders.forEach((item,idx)=>{
+const costPrice = item.costPrice ? Number(item.costPrice).toFixed(2) : "-";
+const sellPrice = item.sellPrice ? Number(item.sellPrice).toFixed(2) : "-";
+const multiCnt = item.multiCnt || "-";
+const calcCost = Number(item.calcCost != null ? item.calcCost : (item.cost || 0)).toFixed(2);
+const calcSell = Number(item.calcSell != null ? item.calcSell : (item.sell || 0)).toFixed(2);
+const tr=document.createElement("tr");
+tr.innerHTML=`
+<td>${item.date}</td>
+<td>业务订单</td>
+<td>${item.cat}</td>
+<td>${costPrice}</td>
+<td>${sellPrice}</td>
+<td>${multiCnt}</td>
+<td>${calcCost}</td>
+<td>${calcSell}</td>
+<td>${Number(item.profit||0).toFixed(2)}</td>
+<td>${item.note||""}</td>
+<td><button class="btn-edit" data-fullidx="${getOrders().findIndex(x=>x.date===item.date&&x.cat===item.cat&&Number(x.calcSell||0)===Number(item.calcSell||0))}">编辑</button> <button class="btn-del" data-type="order" data-idx="${idx}">删除</button></td>`;
+tb.appendChild(tr);
+})
+
+//渲染日常支出（粉色底色区分）
+exps.forEach((item,idx)=>{
+const tr=document.createElement("tr");
+tr.className="tr-exp";
+tr.innerHTML=`
+<td>${item.date}</td>
+<td>日常支出</td>
+<td>${item.cat}</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>${Number(item.money).toFixed(2)}</td>
+<td>-</td>
+<td>-</td>
+<td>${item.note||""}</td>
+<td><button class="btn-del" data-type="exp" data-idx="${idx}">删除</button></td>`;
+tb.appendChild(tr);
+})
+
+//编辑按钮事件
+tb.querySelectorAll(".btn-edit").forEach(b=>{
+    b.onclick=()=>{
+        const fidx = Number(b.dataset.fullidx);
+        editFullIndex = fidx;
+        const o = getOrders()[fidx];
+        document.getElementById("editDate").value = o.date;
+        document.getElementById("editCat").value = o.cat;
+        document.getElementById("editCostPrice").value = o.costPrice;
+        document.getElementById("editSellPrice").value = o.sellPrice;
+        document.getElementById("editMultiCnt").value = o.multiCnt;
+        document.getElementById("editNote").value = o.note || "";
+        recalcEdit();
+        document.getElementById("editModal").classList.add("show");
+    }
+})
+
+//删除按钮逻辑，区分订单/支出
+tb.querySelectorAll(".btn-del").forEach(b=>{
+b.onclick=()=>{
+  const delType = b.dataset.type;
+  const realIdx=Number(b.dataset.idx);
+  if(delType === "order"){
+    const monthList=getOrders().filter(o=>o.date.startsWith(currentYm));
+    const target=monthList[realIdx];
+    const fullIdx=getOrders().findIndex(x=>x.date===target.date&&x.cat===target.cat&&Number(x.calcSell||0)===Number(target.calcSell||0));
+    if(fullIdx>-1){
+      const arr=getOrders();arr.splice(fullIdx,1);saveOrders(arr);renderStat();
+    }
+  }else{
+    const monthList=getExps().filter(e=>e.date.startsWith(currentYm));
+    const target=monthList[realIdx];
+    const fullIdx=getExps().findIndex(x=>x.date===target.date&&x.cat===target.cat&&Number(x.money||0)===Number(target.money||0));
+    if(fullIdx>-1){
+      const arr=getExps();arr.splice(fullIdx,1);saveExps(arr);renderStat();
+    }
+  }
+}
+})
+}
+
+document.getElementById("exportBtn").onclick=()=>{
+const arr=getOrders();
+let csv="\uFEFF日期,分类,拿货单价,售出单价,倍数,拿货总成本,交易金额,利润,备注\n";
+arr.forEach(r=>{
+    const costPrice = r.costPrice || "";
+    const sellPrice = r.sellPrice || "";
+    const multiCnt = r.multiCnt || "";
+    const calcCost = r.calcCost != null ? r.calcCost : (r.cost || 0);
+    const calcSell = r.calcSell != null ? r.calcSell : (r.sell || 0);
+    csv+=`${r.date},${r.cat},${costPrice},${sellPrice},${multiCnt},${calcCost},${calcSell},${r.profit},"${r.note||""}"\n`;
+});
+const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="记账本.csv";
+a.click();
+}
+
+document.getElementById("importBtn").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange=async e=>{
+const f=e.target.files[0];if(!f)return;
+const text=await f.text();
+const lines=text.split(/\r?\n/).filter(x=>x.trim());
+for(let i=1;i<lines.length;i++){
+const row=lines[i].match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
+if(!row||row.length<9)continue;
+const rec={
+date:row[0].trim(),
+cat:row[1].trim(),
+costPrice:row[2].trim()?Number(row[2]):"",
+sellPrice:row[3].trim()?Number(row[3]):"",
+multiCnt:row[4].trim()?Number(row[4]):"",
+calcCost:Number(row[5]),
+calcSell:Number(row[6]),
+profit:Number(row[7]),
+note:(row[8]||"").replace(/"/g,"").trim()
+}
+saveOrders([...getOrders(),rec]);
+}
+alert("导入完成");renderStat();
+}
+
+//双层二次确认清空全部
+document.getElementById("clearAll").onclick=()=>{
+    if(confirm("⚠️警告！即将清空【所有订单+所有支出记录】，建议先导出CSV备份！确定继续吗？")){
+        if(confirm("❗最终确认！一旦删除数据无法恢复，真的要全部清空吗？")){
+            saveOrders([]);
+            saveExps([]);
+            renderStat();
+            alert("全部记录已清空");
+        }
+    }
+}
+
+document.getElementById("filterCat").onchange=renderStat;
+currentYm=getNowYm();
+renderStat();
 </script>
 </body>
 </html>
